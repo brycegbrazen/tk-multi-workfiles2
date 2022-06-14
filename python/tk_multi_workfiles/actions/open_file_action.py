@@ -18,7 +18,13 @@ from sgtk import TankError
 from tank_vendor import six
 
 from .file_action import FileAction
-from ..scene_operation import reset_current_scene, open_file, OPEN_FILE_ACTION
+from ..scene_operation import (
+    reset_current_scene,
+    open_file,
+    check_references,
+    OPEN_FILE_ACTION,
+    CHECK_REFERENCES_ACTION,
+)
 from ..work_area import WorkArea
 from ..file_item import FileItem
 from ..file_finder import FileFinder
@@ -162,6 +168,9 @@ class OpenFileAction(FileAction):
         if is_file_opened is False:
             FileAction.restore_context(parent_ui, previous_context)
             return False
+
+        # Check that all references are up to date in the current file that was just opened
+        check_references(self._app, CHECK_REFERENCES_ACTION, new_ctx, parent_ui)
 
         try:
             self._app.log_metric("Opened Workfile")

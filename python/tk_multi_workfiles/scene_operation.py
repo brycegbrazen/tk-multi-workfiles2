@@ -13,9 +13,13 @@ from sgtk import TankError
 from tank_vendor import six
 from sgtk.platform.qt import QtGui, QtCore
 
-OPEN_FILE_ACTION, SAVE_FILE_AS_ACTION, NEW_FILE_ACTION, VERSION_UP_FILE_ACTION = range(
-    4
-)
+(
+    OPEN_FILE_ACTION,
+    SAVE_FILE_AS_ACTION,
+    NEW_FILE_ACTION,
+    VERSION_UP_FILE_ACTION,
+    CHECK_REFERENCES_ACTION,
+) = range(5)
 
 
 def _do_scene_operation(
@@ -52,6 +56,8 @@ def _do_scene_operation(
         action_str = "new_file"
     elif action == VERSION_UP_FILE_ACTION:
         action_str = "version_up"
+    elif action == CHECK_REFERENCES_ACTION:
+        action_str = "check_references"
     else:
         raise TankError("Unrecognised action %s for scene operation" % action)
 
@@ -148,3 +154,74 @@ def open_file(app, action, context, path, version, read_only):
         read_only,
         result_types=(bool, type(None)),
     )
+
+
+def check_references(app, action, context, parent_ui):
+    """
+    Use hook to check that all references in the current file exist.
+
+    :return: The list of references that are not up to date with the latest version. None is
+        returned if the references could not be checked.
+    :rtype: list | None
+    """
+
+    app.log_debug("Checking references in the current file with hook")
+
+    # First check if there is a custom hook to check references
+    result = _do_scene_operation(
+        app,
+        action,
+        context,
+        "check_references",
+        result_types=(list, type(None)),
+    )
+
+    # Return the result if the custom hook returned a value
+    if result is not None:
+        return result
+
+    # No result returned, perform the default operation to check references
+    result = []
+    engine = app.engine
+    breakdown2_app = engine.apps.get("tk-multi-breakdown2")
+
+    # There is no Scene Breakdown2 app configured, thus references cannot be checked.
+    if not breakdown2_app:
+        return None
+
+    # Get the breakdown manager and use it to check the scene for out of date references.
+    manager = breakdown2_app.create_breakdown_manager()
+    file_items = manager.scan_scene()
+
+    # Process the items to check if any are not up to date
+    for file_item in file_items:
+        manager.get_latest_published_file(file_item)
+        if (
+            not file_item.highest_version_number
+            or file_item.sg_data["version_number"] < file_item.highest_version_number
+        ):
+            result.append(file_item)
+
+    if result:
+        msg_box = QtGui.QMessageBox(parent_ui)
+        msg_box.setWindowTitle("References")
+        msg_box.setText("Found out of date references in current scene.")
+        update_all_button = msg_box.addButton("Update All", QtGui.QMessageBox.ApplyRole)
+        open_button = msg_box.addButton(
+            "Resolve in Scene Breakdown2", QtGui.QMessageBox.YesRole
+        )
+        ignore_button = msg_box.addButton("Ignore", QtGui.QMessageBox.NoRole)
+        msg_box.setDefaultButton(update_all_button)
+        msg_box.exec_()
+
+        if msg_box.clickedButton() == update_all_button:
+            # Update all references to the latest version
+            for file_item in result:
+                manager.update_to_latest_version(file_item)
+
+            # NOTE should we save the file to save the references that were updated?
+
+        elif msg_box.clickedButton() == open_button:
+            breakdown2_app.show_dialog()
+
+    return result
