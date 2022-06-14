@@ -160,6 +160,10 @@ def check_references(app, action, context, parent_ui):
     """
     Use hook to check that all references in the current file exist.
 
+    If the hook did not check for references (returned None), then a default operation to
+    check for references will be performed using the Scene Breakdown2 API (if it is
+    available via the engine apps).
+
     :return: The list of references that are not up to date with the latest version. None is
         returned if the references could not be checked.
     :rtype: list | None
@@ -176,7 +180,8 @@ def check_references(app, action, context, parent_ui):
         result_types=(list, type(None)),
     )
 
-    # Return the result if the custom hook returned a value
+    # Return the result, if the custom hook returned a value (indicating it checked the
+    # references)
     if result is not None:
         return result
 
