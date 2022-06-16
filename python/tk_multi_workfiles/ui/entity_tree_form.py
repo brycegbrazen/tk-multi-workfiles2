@@ -64,7 +64,7 @@ class Ui_EntityTreeForm(object):
         self.verticalLayout.setStretch(2, 1)
 
         self.retranslateUi(EntityTreeForm)
-        QtCore.QMetaObject.connectSlotsByName(EntityTreeForm)
+        #QtCore.QMetaObject.connectSlotsByName(EntityTreeForm)
 
     def retranslateUi(self, EntityTreeForm):
         EntityTreeForm.setWindowTitle(QtGui.QApplication.translate("EntityTreeForm", "Form", None, QtGui.QApplication.UnicodeUTF8))
