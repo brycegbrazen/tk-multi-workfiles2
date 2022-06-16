@@ -57,7 +57,7 @@ class Ui_FileWidget(object):
         self.horizontalLayout.addWidget(self.background)
 
         self.retranslateUi(FileWidget)
-        QtCore.QMetaObject.connectSlotsByName(FileWidget)
+        #QtCore.QMetaObject.connectSlotsByName(FileWidget)
 
     def retranslateUi(self, FileWidget):
         FileWidget.setWindowTitle(QtGui.QApplication.translate("FileWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
